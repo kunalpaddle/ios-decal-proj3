@@ -9,7 +9,19 @@
 import Foundation
 
 class InstagramAPI {
-
+    
+    func makeNewPhotoFromInstaJSON(photoJson:NSDictionary) -> Photo {
+        let likes:NSDictionary          = photoJson.valueForKey("likes") as! NSDictionary
+        let numLikes:Int                = (likes.valueForKey("count"))! as! Int
+        let allResOfPhoto:NSDictionary  = photoJson.valueForKey("images") as! NSDictionary
+        let lowResPhoto:NSDictionary    = allResOfPhoto.valueForKey("low_resolution") as! NSDictionary
+        let photoUrl:String             = (lowResPhoto.valueForKey("url"))! as! String
+        let user:NSDictionary           = photoJson.valueForKey("user") as! NSDictionary
+        let username:String             = (user.valueForKey("username"))! as! String
+        let photoParams:NSDictionary    = ["likes": numLikes, "url": photoUrl, "username": username]
+        let newPhoto                    = Photo(data: photoParams)
+        return newPhoto
+    }
     
     /* Connects with the Instagram API and pulls resources from the server. */
     func loadPhotos(completion: (([Photo]) -> Void)!) {
@@ -36,10 +48,11 @@ class InstagramAPI {
                     let feedDictionary = try NSJSONSerialization.JSONObjectWithData(data!, options: NSJSONReadingOptions.MutableContainers) as! NSDictionary
                     // FILL ME IN, REMEMBER TO USE FORCED DOWNCASTING
                     photos = []
-                    let parsedPhotos = feedDictionary.valueForKey("data") as! NSArray
-                    for (var i = 0; i < parsedPhotos.count; i++) {
-                        let currentPhoto:NSDictionary = parsedPhotos.objectAtIndex(i) as! NSDictionary
-                        photos.append(self.parseInstagramJson(currentPhoto))
+                    let photosFromJson = feedDictionary.valueForKey("data") as! NSArray
+                    for (var i = 0; i < photosFromJson.count; i++) {
+                        let currentPhoto:NSDictionary = photosFromJson.objectAtIndex(i) as! NSDictionary
+                        let newPhoto:Photo = self.makeNewPhotoFromInstaJSON(currentPhoto)
+                        photos.append(newPhoto)
                     }
                     
                     
@@ -56,18 +69,5 @@ class InstagramAPI {
             }
         }
         task.resume()
-    }
-    
-    func parseInstagramJson(instagramJson:NSDictionary) -> Photo {
-        let user:NSDictionary = instagramJson.valueForKey("user") as! NSDictionary
-        let username:String = (user.valueForKey("username"))! as! String
-        let likes:NSDictionary  = instagramJson.valueForKey("likes") as! NSDictionary
-        let numberOfLikes:Int = (likes.valueForKey("count"))! as! Int
-        let allPhotoResolutions:NSDictionary  = instagramJson.valueForKey("images") as! NSDictionary
-        let lowResolutionPhotos:NSDictionary = allPhotoResolutions.valueForKey("low_resolution") as! NSDictionary
-        let photoUrl:String = (lowResolutionPhotos.valueForKey("url"))! as! String
-        let photoProperties:NSDictionary = ["url": photoUrl, "username": username, "likes": numberOfLikes]
-        let newPhoto = Photo(data: photoProperties)
-        return newPhoto
     }
 }
